@@ -1,0 +1,19 @@
+{
+  "name": "backend_projects",
+  "version": "1.0.0",
+  "description": "this is a backend project not use Front-end",
+  "keywords": [
+    "Backend",
+    "nodejs",
+    "mongodb",
+    "expressjs",
+    "nodemon"
+  ],
+  "license": "ISC",
+  "author": "Mamudul_islam",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "test": "dev"
+  }
+}
