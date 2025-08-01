@@ -12,14 +12,17 @@
   "license": "ISC",
   "author": "Mamudul_islam",
   "type": "module",
-  "dev": "nodemon src/index.js",
   "scripts": {
-    "test": "dev"
+    "dev": "nodemon -r dotenv/config --experimental-json-modules src/index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "devDependencies": {
     "nodemon": "^3.1.10"
   },
   "dependencies": {
+    "dotenv": "^17.2.1",
+    "express": "^5.1.0",
+    "mongoose": "^8.17.0",
     "prettier": "^3.6.2"
   }
 }
