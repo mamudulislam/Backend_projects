@@ -1,0 +1,26 @@
+# Ignore build output
+dist/
+build/
+
+# Ignore node_modules
+node_modules/
+
+# Ignore lock files
+package-lock.json
+yarn.lock
+
+# Ignore all minified files
+*.min.js
+
+# Ignore config files
+*.config.js
+
+# Ignore images
+*.png
+*.jpg
+*.jpeg
+*.svg
+
+# Ignore everything in public except index.html
+public/*
+!public/index.html
