@@ -11,9 +11,12 @@
   ],
   "license": "ISC",
   "author": "Mamudul_islam",
-  "type": "commonjs",
-  "main": "index.js",
+  "type": "module",
+  "dev": "nodemon src/index.js",
   "scripts": {
     "test": "dev"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
   }
 }
