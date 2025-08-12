@@ -4,7 +4,7 @@ import fs from "fs";
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET
+  api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
 /**
@@ -18,7 +18,7 @@ export const uploadOnCloudinary = async (localFilePath) => {
 
     // Upload file to Cloudinary
     const result = await cloudinary.uploader.upload(localFilePath, {
-      folder: "your_folder_name" // Optional folder in Cloudinary
+      folder: "your_folder_name", // Optional folder in Cloudinary
     });
 
     // Delete file from local after upload
@@ -33,6 +33,23 @@ export const uploadOnCloudinary = async (localFilePath) => {
       fs.unlinkSync(localFilePath);
     }
 
+    throw error;
+  }
+};
+
+/**
+ * Deletes a file from Cloudinary by its public ID.
+ * @param {string} publicId - The public ID of the file to delete
+ * @returns {Promise<object>} - Cloudinary deletion result
+ */
+export const deleteFromCloudinary = async (publicId) => {
+  try {
+    if (!publicId) throw new Error("Public ID is required for deletion.");
+
+    const result = await cloudinary.uploader.destroy(publicId);
+    return result;
+  } catch (error) {
+    console.error("Cloudinary delete error:", error);
     throw error;
   }
 };
