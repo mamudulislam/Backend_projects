@@ -189,10 +189,151 @@ const refreshaccessToken = asyncHandler(async (req, res) => {
   }
 });
 
+// Change Password
+const changePassword = asyncHandler(async (req, res) => {
+  try {
+    const userId = req.user?._id;
+    const { currentPassword, newPassword } = req.body;
+
+    if (!userId) {
+      throw new ApiError(401, "User not authenticated");
+    }
+
+    if (!currentPassword?.trim()) {
+      throw new ApiError(400, "Current password is required");
+    }
+
+    if (!newPassword?.trim()) {
+      throw new ApiError(400, "New password is required");
+    }
+
+    // Optional: Password strength validation
+    if (!/^(?=.*[A-Z])(?=.*\d).{8,}$/.test(newPassword)) {
+      throw new ApiError(400, "Password must be at least 8 characters long and include an uppercase letter and a number.");
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      throw new ApiError(404, "User not found");
+    }
+
+    const isMatch = await user.isPasswordCorrect(currentPassword);
+    if (!isMatch) {
+      throw new ApiError(401, "Current password is incorrect");
+    }
+
+    user.password = newPassword;
+    user.refreshToken = null; // Optional: logout from all devices
+    await user.save();
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, {}, "Password updated successfully"));
+  } catch (error) {
+    console.error("Error in changePassword:", error);
+    throw new ApiError(
+      error.statusCode || 500,
+      error.message || "Something went wrong while changing password"
+    );
+  }
+});
+
+// Get Current Authenticated User
+const getCurrentUser = asyncHandler(async (req, res) => {
+  try {
+    const userId = req.user?._id;
+
+    if (!userId) {
+      throw new ApiError(401, "User not authenticated");
+    }
+
+    const user = await User.findById(userId).select("-password -refreshToken");
+
+    if (!user) {
+      throw new ApiError(404, "User not found");
+    }
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, user, "User fetched successfully"));
+  } catch (error) {
+    // You can log the error here if needed
+    throw new ApiError(
+      error.statusCode || 500,
+      error.message || "Something went wrong while fetching the user"
+    );
+  }
+});
+
+// update Account Details
+const updateAccountDetails = asyncHandler(async (req, res) => {
+  try {
+    const userId = req.user?._id;
+    if (!userId) throw new ApiError(401, "User not authenticated");
+
+    const { username, email, fullName } = req.body;
+
+    const user = await User.findById(userId);
+    if (!user) throw new ApiError(404, "User not found");
+
+    if (username?.trim() && username.toLowerCase() !== user.username) {
+      const userConflict = await User.findOne({ username: username.toLowerCase(), _id: { $ne: userId } });
+      if (userConflict) throw new ApiError(409, "Username is already taken");
+      user.username = username.toLowerCase();
+    }
+
+    if (email?.trim() && email.toLowerCase() !== user.email) {
+      const emailConflict = await User.findOne({ email: email.toLowerCase(), _id: { $ne: userId } });
+      if (emailConflict) throw new ApiError(409, "Email is already taken");
+      user.email = email.toLowerCase();
+    }
+
+    if (fullName?.trim()) {
+      user.fullName = fullName;
+    }
+
+    if (req.files?.avatar?.[0]?.path) {
+      const avatar = req.files.avatar[0];
+      const avatarUpload = await uploadOnCloudinary(avatar.path);
+
+      if (!avatarUpload) throw new ApiError(500, "Failed to upload avatar");
+
+      user.avatar = avatarUpload.secure_url;
+    }
+
+    if (req.files?.coverImage?.[0]?.path) {
+      const cover = req.files.coverImage[0];
+      const coverUpload = await uploadOnCloudinary(cover.path);
+
+      if (!coverUpload) throw new ApiError(500, "Failed to upload cover image");
+
+      user.coverImage = coverUpload.secure_url;
+    }
+
+    await user.save();
+
+    const updatedUser = await User.findById(userId).select("-password -refreshToken");
+
+    return res.status(200).json(new ApiResponse(200, updatedUser, "Account details updated successfully"));
+  } catch (error) {
+    console.error("Error updating account details:", error);
+    if (error instanceof ApiError) {
+      throw error;
+    } else {
+      throw new ApiError(500, error.message || "Failed to update account details");
+    }
+  }
+});
+
+
+
 // Export all handlers
 export {
   registerUsers,
   loginUser,
   logoutUser,
-  refreshaccessToken
+  refreshaccessToken,
+  changePassword,
+  getCurrentUser,
+  updateAccountDetails 
 };
