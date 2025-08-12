@@ -1,8 +1,9 @@
+import mongoose from "mongoose";
+import jwt from "jsonwebtoken";
 import { User } from "../models/user.models.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
-import jwt from "jsonwebtoken";
 import { uploadOnCloudinary, deleteFromCloudinary } from "../utils/Cludinary.js";
 
 // Utility function to generate tokens
@@ -23,9 +24,6 @@ const generateAccessAndRefreshTokens = async (userId) => {
     throw new ApiError(500, "Something went wrong while generating tokens");
   }
 };
-
-// ===================== Auth Controllers =====================
-
 // Register User
 const registerUsers = asyncHandler(async (req, res) => {
   try {
@@ -310,6 +308,135 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
     throw error;
   }
 });
+const getUserChannelProfile = asyncHandler(async (req, res) => {
+  try {
+    const userId = req.params.userId || req.user?._id;
+    if (!userId) {
+      throw new ApiError(400, "User ID is required");
+    }
+
+    const authUserId = req.user?._id; // Logged-in user's ID (for isSubscribed check)
+
+    const userProfileAgg = await User.aggregate([
+      { $match: { _id: new mongoose.Types.ObjectId(userId) } },
+
+      // Lookup subscriber count
+      {
+        $lookup: {
+          from: "subscriptions",
+          localField: "_id",
+          foreignField: "channel",
+          as: "subscribers",
+        },
+      },
+
+      {
+        $lookup: {
+          from: "subscriptions",
+          localField: "_id",
+          foreignField: "subscriber",
+          as: "subscriptions",
+        },
+      },
+
+      {
+        $addFields: {
+          subscribersCount: { $size: "$subscribers" },
+          isSubscribed: {
+            $in: [new mongoose.Types.ObjectId(authUserId), "$subscribers.subscriber"],
+          },
+        },
+      },
+      {
+        $project: {
+          fullName: 1,
+          username: 1,
+          email: 1,
+          subscribers: 1, 
+          subscriptions: 1,
+          subscribersCount:1,
+          isSubscribed:1,
+          avatar:1,
+          coverImage:1 
+        },
+      },
+    ]);
+
+    if (!userProfileAgg || userProfileAgg.length === 0) {
+      throw new ApiError(404, "User channel profile not found");
+    }
+
+    const userProfile = userProfileAgg[0];
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, userProfile, "User channel profile fetched successfully"));
+  } catch (error) {
+    throw error instanceof ApiError
+      ? error
+      : new ApiError(500, error.message || "Failed to fetch user channel profile");
+  }
+});
+
+ const getWatchHistory = asyncHandler(async (req, res) => {
+  try {
+    const userId = req.user?._id;
+    if (!userId) {
+      throw new ApiError(401, "User not authenticated");
+    }
+
+    const historyAgg = await User.aggregate([
+      {
+        $match: { _id: new mongoose.Types.ObjectId(userId) }
+      },
+      {
+        $lookup: {
+          from: "videos", 
+          localField: "watchHistory",
+          foreignField: "_id",
+          as: "watchHistory",
+          pipeline: [
+            {
+              $lookup: {
+                from: "users",
+                localField: "owner",
+                foreignField: "_id",
+                as: "owner",
+                pipeline: [
+                  {
+                    $project: {
+                      username: 1,
+                      avatar: 1,
+                      _id: 1
+                    }
+                  }
+                ]
+              }
+            },
+            { $unwind: "$owner" }
+          ]
+        }
+      },
+      {
+        $project: {
+          watchHistory: 1 
+        }
+      }
+    ]);
+
+    if (!historyAgg.length) {
+      throw new ApiError(404, "Watch history not found");
+    }
+
+    return res.status(200).json(
+      new ApiResponse(200, historyAgg[0].watchHistory, "Watch history fetched successfully")
+    );
+  } catch (error) {
+    throw error instanceof ApiError
+      ? error
+      : new ApiError(500, error.message || "Failed to fetch watch history");
+  }
+});
 
 export {
   registerUsers,
@@ -321,4 +448,6 @@ export {
   updateAccountDetails,
   updateUserAvatar,
   updateUserCoverImage,
+  getUserChannelProfile,
+  getWatchHistory
 };
