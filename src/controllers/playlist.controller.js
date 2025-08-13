@@ -1,34 +1,78 @@
-import { asyncHandler } from "../utils/asyncHandler.js";
 import { Playlist } from "../models/playlist.model.js";
-import { ApiError } from "../utils/ApiError.js";
-import { ApiResponse } from "../utils/ApiResponse.js";
 
-export const createPlaylist = asyncHandler(async (req, res) => {
-  const { title, description } = req.body;
-  if (!title) throw new ApiError(400, "Playlist title is required");
-
-  const playlist = await Playlist.create({
-    user: req.user._id,
-    title,
-    description,
-  });
-
-  return res.status(201).json(new ApiResponse(201, playlist, "Playlist created successfully"));
-});
-
-export const addVideoToPlaylist = asyncHandler(async (req, res) => {
-  const { playlistId, videoId } = req.body;
-  if (!playlistId || !videoId) throw new ApiError(400, "Playlist ID and Video ID are required");
-
-  const playlist = await Playlist.findOne({ _id: playlistId, user: req.user._id });
-  if (!playlist) throw new ApiError(404, "Playlist not found or unauthorized");
-
-  if (playlist.videos.includes(videoId)) {
-    throw new ApiError(400, "Video already in playlist");
+// Create playlist
+export const createPlaylist = async (req, res) => {
+  try {
+    const { title, description, videos } = req.body;
+    const newPlaylist = await Playlist.create({
+      title,
+      description,
+      videos,
+      user: req.user._id,
+    });
+    res.status(201).json(newPlaylist);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
+};
 
-  playlist.videos.push(videoId);
-  await playlist.save();
+// Update playlist
+export const updatePlaylist = async (req, res) => {
+  try {
+    const { playlistId } = req.params;
+    const { title, description, videos } = req.body;
 
-  return res.status(200).json(new ApiResponse(200, playlist, "Video added to playlist"));
-});
+    const playlist = await Playlist.findById(playlistId);
+    if (!playlist) return res.status(404).json({ message: "Playlist not found" });
+
+    if (playlist.user.toString() !== req.user._id.toString())
+      return res.status(403).json({ message: "Unauthorized" });
+
+    playlist.title = title || playlist.title;
+    playlist.description = description || playlist.description;
+    playlist.videos = videos || playlist.videos;
+
+    await playlist.save();
+    res.status(200).json(playlist);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Delete playlist
+export const deletePlaylist = async (req, res) => {
+  try {
+    const { playlistId } = req.params;
+    const playlist = await Playlist.findById(playlistId);
+    if (!playlist) return res.status(404).json({ message: "Playlist not found" });
+
+    if (playlist.user.toString() !== req.user._id.toString())
+      return res.status(403).json({ message: "Unauthorized" });
+
+    await playlist.remove();
+    res.status(200).json({ message: "Playlist deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Get user's playlists
+export const getUserPlaylists = async (req, res) => {
+  try {
+    const playlists = await Playlist.find({ user: req.params.userId });
+    res.status(200).json(playlists);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Get playlist by ID
+export const getPlaylistById = async (req, res) => {
+  try {
+    const playlist = await Playlist.findById(req.params.playlistId);
+    if (!playlist) return res.status(404).json({ message: "Playlist not found" });
+    res.status(200).json(playlist);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
