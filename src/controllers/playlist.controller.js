@@ -1,20 +1,25 @@
 import { Playlist } from "../models/playlist.model.js";
+import { asyncHandler } from "../utils/asyncHandler.js";
 
 // Create playlist
-export const createPlaylist = async (req, res) => {
-  try {
-    const { title, description, videos } = req.body;
-    const newPlaylist = await Playlist.create({
-      title,
-      description,
-      videos,
-      user: req.user._id,
-    });
-    res.status(201).json(newPlaylist);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
+export const createPlaylist = asyncHandler(async (req, res) => {
+  const { name, description, isPrivate } = req.body;
+
+  if (!name?.trim()) throw new ApiError(400, "Playlist name is required");
+
+  const playlist = await Playlist.create({
+    owner: req.user._id,   // <-- get owner from authenticated user
+    name,
+    description: description || "",
+    isPrivate: isPrivate || false
+  });
+
+  return res.status(201).json({
+    playlist,
+    message: "Playlist created successfully"
+  });
+});
+
 
 // Update playlist
 export const updatePlaylist = async (req, res) => {
