@@ -1,0 +1,28 @@
+{
+    "version": 2,
+    "builds": [
+        {
+            "src": "src/index.js",
+            "use": "@vercel/node"
+        }
+    ],
+    "routes": [
+        {
+            "src": "/(.*)",
+            "dest": "src/index.js"
+        }
+    ],
+    "env": {
+        "PORT": "8000",
+        "BASE_ON_API": "/api/v1",
+        "MONGODB_URL": "mongodb+srv://demousermamud:DIRJyzHmcW4VIado@cluster0.majgliy.mongodb.net/Backend_projects?retryWrites=true&w=majority&appName=Cluster0",
+        "CORS_ORIGIN": "*",
+        "ACCESS_TOKEN_SECRET": "e5a83c99d920f9cbd1d9bbac10b4f43a8ae263ac53921d9b0c61f72649b09e6bfa81a267d3cbb7d69415e3b5057d470c1674f92e9a7d2bdfcd1923af3845a0a7",
+        "ACCESS_TOKEN_EXPIRY": "1d",
+        "REFRESH_TOKEN_SECRET": "5c6f3a947a894a1fbd0b87493a2f7c3768cdb1ea908be4e7eaf0a20a8f38e2b1",
+        "REFRESH_TOKEN_EXPIRY": "10d",
+        "CLOUDINARY_NAME": "drdutnczb",
+        "CLOUDINARY_API_KEY": "575547754893935",
+        "CLOUDINARY_API_SECRET": "aO8NaE5VYsXouz5SIt07m30Y428"
+    }
+}
