@@ -1,10 +1,11 @@
+// controllers/subscription.controller.js
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { Subscription } from "../models/subscription.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 
 export const subscribe = asyncHandler(async (req, res) => {
-  const { channelId } = req.body;
+  const { channelId } = req.params;   
   if (!channelId) throw new ApiError(400, "Channel ID is required");
 
   if (channelId === req.user._id.toString()) {
@@ -25,11 +26,13 @@ export const subscribe = asyncHandler(async (req, res) => {
     channel: channelId,
   });
 
-  return res.status(201).json(new ApiResponse(201, {}, "Subscribed successfully"));
+  return res
+    .status(201)
+    .json(new ApiResponse(201, {}, "Subscribed successfully"));
 });
 
 export const unsubscribe = asyncHandler(async (req, res) => {
-  const { channelId } = req.body;
+  const { channelId } = req.params; 
   if (!channelId) throw new ApiError(400, "Channel ID is required");
 
   await Subscription.findOneAndDelete({
@@ -37,5 +40,7 @@ export const unsubscribe = asyncHandler(async (req, res) => {
     channel: channelId,
   });
 
-  return res.status(200).json(new ApiResponse(200, {}, "Unsubscribed successfully"));
+  return res
+    .status(200)
+    .json(new ApiResponse(200, {}, "Unsubscribed successfully"));
 });
